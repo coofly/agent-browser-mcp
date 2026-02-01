@@ -268,8 +268,27 @@ export async function createServer() {
     try {
       const result = await handleToolCall(name, args || {});
 
-      // 打印成功结果日志
-      console.error(`[Tool] ${name} 结果: ${result}`);
+      // 解析结果，检查是否有错误
+      try {
+        const parsed = JSON.parse(result);
+        if (!parsed.success && parsed.error) {
+          console.error(`[Tool] ${name} 失败: ${parsed.error}`);
+        } else if (!parsed.success && parsed.output) {
+          // agent-browser 返回的嵌套错误
+          try {
+            const nested = JSON.parse(parsed.output);
+            if (nested.error) {
+              console.error(`[Tool] ${name} 失败: ${nested.error}`);
+            }
+          } catch {
+            console.error(`[Tool] ${name} 失败: ${parsed.output}`);
+          }
+        } else {
+          console.error(`[Tool] ${name} 成功`);
+        }
+      } catch {
+        console.error(`[Tool] ${name} 结果: ${result}`);
+      }
 
       return { content: [{ type: 'text', text: result }] };
     } catch (error) {

@@ -21,6 +21,10 @@ FROM node:20-slim
 
 WORKDIR /app
 
+# 安装 sudo，让 agent-browser install --with-deps 能正常工作
+RUN apt-get update && apt-get install -y --no-install-recommends sudo \
+    && rm -rf /var/lib/apt/lists/*
+
 # 复制依赖文件并安装生产依赖
 COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
