@@ -2,7 +2,7 @@
 
 [English](README.md) | **[中文](README_ZH.md)**
 
-[agent-browser](https://github.com/anthropics/agent-browser) 的 MCP (Model Context Protocol) 服务器 - 为 AI 代理提供无头浏览器自动化能力。
+[agent-browser](https://github.com/vercel-labs/agent-browser) 的 MCP (Model Context Protocol) 服务器 - 为 AI 代理提供无头浏览器自动化能力。
 
 ## 功能特性
 
@@ -12,6 +12,21 @@
 - **Docker 支持**：提供 Dockerfile，支持容器化部署
 
 ## 安装
+
+### 通过 npx（推荐）
+
+```bash
+# 直接运行（无需安装）
+npx @coofly/agent-browser-mcp
+
+# SSE 模式
+npx @coofly/agent-browser-mcp --sse --port 9223
+
+# 连接 CDP
+npx @coofly/agent-browser-mcp --cdp "http://localhost:9222"
+```
+
+### 从源码安装
 
 ```bash
 # 克隆仓库
@@ -78,6 +93,39 @@ chrome --remote-debugging-port=9222
 
 # 启动 MCP 服务器并连接 CDP
 npm start -- --cdp "http://localhost:9222"
+```
+
+### MCP 客户端配置
+
+#### Claude Desktop
+
+添加到 Claude Desktop 配置文件：
+
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "agent-browser": {
+      "command": "npx",
+      "args": ["agent-browser-mcp"]
+    }
+  }
+}
+```
+
+连接 CDP 端点：
+
+```json
+{
+  "mcpServers": {
+    "agent-browser": {
+      "command": "npx",
+      "args": ["agent-browser-mcp", "--cdp", "http://localhost:9222"]
+    }
+  }
+}
 ```
 
 ## Docker

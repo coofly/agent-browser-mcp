@@ -329,7 +329,8 @@ async function startSseServer(server: Server, config: AppConfig) {
     // SSE 端点
     if (url.pathname === '/sse' && req.method === 'GET') {
       const transport = new SSEServerTransport('/messages', res);
-      const sessionId = crypto.randomUUID();
+      // 使用 transport 内部的 sessionId，确保与客户端收到的一致
+      const sessionId = transport.sessionId;
       transports.set(sessionId, transport);
 
       console.error(`[SSE] 新连接: ${sessionId}`);

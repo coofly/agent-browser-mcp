@@ -2,7 +2,7 @@
 
 **[English](README.md)** | [中文](README_ZH.md)
 
-MCP (Model Context Protocol) server for [agent-browser](https://github.com/anthropics/agent-browser) - headless browser automation for AI agents.
+MCP (Model Context Protocol) server for [agent-browser](https://github.com/vercel-labs/agent-browser) - headless browser automation for AI agents.
 
 ## Features
 
@@ -12,6 +12,21 @@ MCP (Model Context Protocol) server for [agent-browser](https://github.com/anthr
 - **Docker Support**: Ready-to-use Dockerfile for containerized deployment
 
 ## Installation
+
+### Via npx (Recommended)
+
+```bash
+# Run directly without installation
+npx @coofly/agent-browser-mcp
+
+# SSE mode
+npx @coofly/agent-browser-mcp --sse --port 9223
+
+# With CDP endpoint
+npx @coofly/agent-browser-mcp --cdp "http://localhost:9222"
+```
+
+### From Source
 
 ```bash
 # Clone the repository
@@ -78,6 +93,39 @@ chrome --remote-debugging-port=9222
 
 # Start MCP server with CDP
 npm start -- --cdp "http://localhost:9222"
+```
+
+### MCP Client Configuration
+
+#### Claude Desktop
+
+Add to your Claude Desktop configuration file:
+
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "agent-browser": {
+      "command": "npx",
+      "args": ["agent-browser-mcp"]
+    }
+  }
+}
+```
+
+With CDP endpoint:
+
+```json
+{
+  "mcpServers": {
+    "agent-browser": {
+      "command": "npx",
+      "args": ["agent-browser-mcp", "--cdp", "http://localhost:9222"]
+    }
+  }
+}
 ```
 
 ## Docker
