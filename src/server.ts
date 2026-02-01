@@ -298,17 +298,27 @@ export async function startServer() {
     console.error(`[CDP] 已启用远程连接: ${appConfig.cdp.endpoint}`);
   }
 
-  // 检测是否为 TTY（交互式终端）
-  const isTTY = process.stdin.isTTY;
+  // 确定传输模式
+  const configMode = appConfig.server.mode;
+  let useHttpMode: boolean;
 
-  if (isTTY) {
-    // 交互式终端：只启动 HTTP 服务器
-    console.error('[服务器] 检测到交互式终端，启动 HTTP 模式');
+  if (configMode === 'http') {
+    console.error('[服务器] 配置指定 HTTP 模式');
+    useHttpMode = true;
+  } else if (configMode === 'stdio') {
+    console.error('[服务器] 配置指定 Stdio 模式');
+    useHttpMode = false;
+  } else {
+    // auto 模式：检测是否为 TTY（交互式终端）
+    const isTTY = process.stdin.isTTY;
+    useHttpMode = !!isTTY;
+    console.error(`[服务器] 自动检测模式: ${isTTY ? 'HTTP' : 'Stdio'}`);
+  }
+
+  if (useHttpMode) {
     const server = await createServer();
     await startHttpServer(server, appConfig);
   } else {
-    // 非交互式（管道输入）：启动 Stdio 模式
-    console.error('[服务器] 检测到管道输入，启动 Stdio 模式');
     const server = await createServer();
     await startStdioServer(server);
   }
