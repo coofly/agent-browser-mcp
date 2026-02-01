@@ -15,15 +15,46 @@
 
 ### 通过 npx（推荐）
 
+**Linux / macOS / Git Bash：**
+
 ```bash
-# 直接运行（无需安装）
+# 直接运行（stdio 模式，默认）
 npx @coofly/agent-browser-mcp
 
 # SSE 模式
 MCP_TRANSPORT=sse MCP_PORT=9223 npx @coofly/agent-browser-mcp
 
-# 连接 CDP
+# 连接远程 CDP 浏览器
 CDP_ENDPOINT="http://localhost:9222" npx @coofly/agent-browser-mcp
+
+# SSE 模式 + 远程 CDP 浏览器
+MCP_TRANSPORT=sse CDP_ENDPOINT="http://localhost:9222" npx @coofly/agent-browser-mcp
+```
+
+**Windows (PowerShell)：**
+
+```powershell
+# 直接运行（stdio 模式，默认）
+npx @coofly/agent-browser-mcp
+
+# SSE 模式
+$env:MCP_TRANSPORT="sse"; $env:MCP_PORT="9223"; npx @coofly/agent-browser-mcp
+
+# 连接远程 CDP 浏览器
+$env:CDP_ENDPOINT="http://localhost:9222"; npx @coofly/agent-browser-mcp
+
+# SSE 模式 + 远程 CDP 浏览器
+$env:MCP_TRANSPORT="sse"; $env:CDP_ENDPOINT="http://localhost:9222"; npx @coofly/agent-browser-mcp
+```
+
+**Windows (CMD)：**
+
+```cmd
+# SSE 模式
+set MCP_TRANSPORT=sse && set MCP_PORT=9223 && npx @coofly/agent-browser-mcp
+
+# 连接远程 CDP 浏览器
+set CDP_ENDPOINT=http://localhost:9222 && npx @coofly/agent-browser-mcp
 ```
 
 ### 从源码安装

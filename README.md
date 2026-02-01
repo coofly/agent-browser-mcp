@@ -15,15 +15,46 @@ MCP (Model Context Protocol) server for [agent-browser](https://github.com/verce
 
 ### Via npx (Recommended)
 
+**Linux / macOS / Git Bash:**
+
 ```bash
-# Run directly without installation
+# Run directly (stdio mode, default)
 npx @coofly/agent-browser-mcp
 
 # SSE mode
 MCP_TRANSPORT=sse MCP_PORT=9223 npx @coofly/agent-browser-mcp
 
-# With CDP endpoint
+# With remote CDP browser
 CDP_ENDPOINT="http://localhost:9222" npx @coofly/agent-browser-mcp
+
+# SSE mode with remote CDP browser
+MCP_TRANSPORT=sse CDP_ENDPOINT="http://localhost:9222" npx @coofly/agent-browser-mcp
+```
+
+**Windows (PowerShell):**
+
+```powershell
+# Run directly (stdio mode, default)
+npx @coofly/agent-browser-mcp
+
+# SSE mode
+$env:MCP_TRANSPORT="sse"; $env:MCP_PORT="9223"; npx @coofly/agent-browser-mcp
+
+# With remote CDP browser
+$env:CDP_ENDPOINT="http://localhost:9222"; npx @coofly/agent-browser-mcp
+
+# SSE mode with remote CDP browser
+$env:MCP_TRANSPORT="sse"; $env:CDP_ENDPOINT="http://localhost:9222"; npx @coofly/agent-browser-mcp
+```
+
+**Windows (CMD):**
+
+```cmd
+# SSE mode
+set MCP_TRANSPORT=sse && set MCP_PORT=9223 && npx @coofly/agent-browser-mcp
+
+# With remote CDP browser
+set CDP_ENDPOINT=http://localhost:9222 && npx @coofly/agent-browser-mcp
 ```
 
 ### From Source
