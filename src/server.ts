@@ -263,7 +263,8 @@ export async function createServer() {
     const { name, arguments: args } = request.params;
 
     // 打印请求日志
-    console.error(`[Tool] ${name} 请求: ${JSON.stringify(args || {})}`);
+    const argsStr = args && Object.keys(args).length > 0 ? `: ${JSON.stringify(args)}` : '';
+    console.error(`[Tool] ${name} 请求${argsStr}`);
 
     try {
       const result = await handleToolCall(name, args || {});
