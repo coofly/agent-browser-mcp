@@ -117,15 +117,32 @@ With CDP endpoint:
 ### Using Docker Hub (Recommended)
 
 ```bash
-# Basic SSE mode (with built-in browser)
+# SSE mode with built-in browser (browser installed on first start)
 docker run -d -p 9223:9223 \
   -e MCP_TRANSPORT=sse \
   coofly/agent-browser-mcp:latest
 
-# Connect to remote CDP browser (faster startup, no browser installation)
+# SSE mode with remote CDP browser (faster startup, no browser installation)
 docker run -d -p 9223:9223 \
   -e MCP_TRANSPORT=sse \
   -e CDP_ENDPOINT=http://host.docker.internal:9222 \
+  coofly/agent-browser-mcp:latest
+
+# Stdio mode (for direct integration with MCP clients)
+docker run -i --rm \
+  -e MCP_TRANSPORT=stdio \
+  coofly/agent-browser-mcp:latest
+
+# Stdio mode with remote CDP browser
+docker run -i --rm \
+  -e MCP_TRANSPORT=stdio \
+  -e CDP_ENDPOINT=http://host.docker.internal:9222 \
+  coofly/agent-browser-mcp:latest
+
+# Custom timeout setting (default: 30000ms)
+docker run -d -p 9223:9223 \
+  -e MCP_TRANSPORT=sse \
+  -e BROWSER_TIMEOUT=60000 \
   coofly/agent-browser-mcp:latest
 ```
 
@@ -137,9 +154,13 @@ services:
   agent-browser-mcp:
     image: coofly/agent-browser-mcp:latest
     ports:
-      - "9223:9223"
+      - "9223:9223"           # MCP SSE server port
     environment:
-      - MCP_TRANSPORT=sse
+      - MCP_TRANSPORT=sse     # Transport mode: sse or stdio
+      # - MCP_HOST=0.0.0.0    # SSE server bind address (default: 0.0.0.0)
+      # - MCP_PORT=9223       # SSE server port (default: 9223)
+      # - CDP_ENDPOINT=http://chrome:9222  # Remote browser CDP endpoint
+      # - BROWSER_TIMEOUT=30000            # Command timeout in ms
 ```
 
 ### Build from Source

@@ -117,15 +117,32 @@ CDP_ENDPOINT="http://localhost:9222" npm start
 ### 使用 Docker Hub（推荐）
 
 ```bash
-# 基本 SSE 模式（使用内置浏览器）
+# SSE 模式，使用内置浏览器（首次启动时安装浏览器）
 docker run -d -p 9223:9223 \
   -e MCP_TRANSPORT=sse \
   coofly/agent-browser-mcp:latest
 
-# 连接远程 CDP 浏览器（启动更快，无需安装浏览器）
+# SSE 模式，连接远程 CDP 浏览器（启动更快，无需安装浏览器）
 docker run -d -p 9223:9223 \
   -e MCP_TRANSPORT=sse \
   -e CDP_ENDPOINT=http://host.docker.internal:9222 \
+  coofly/agent-browser-mcp:latest
+
+# Stdio 模式（用于直接集成 MCP 客户端）
+docker run -i --rm \
+  -e MCP_TRANSPORT=stdio \
+  coofly/agent-browser-mcp:latest
+
+# Stdio 模式，连接远程 CDP 浏览器
+docker run -i --rm \
+  -e MCP_TRANSPORT=stdio \
+  -e CDP_ENDPOINT=http://host.docker.internal:9222 \
+  coofly/agent-browser-mcp:latest
+
+# 自定义超时时间（默认：30000ms）
+docker run -d -p 9223:9223 \
+  -e MCP_TRANSPORT=sse \
+  -e BROWSER_TIMEOUT=60000 \
   coofly/agent-browser-mcp:latest
 ```
 
@@ -137,9 +154,13 @@ services:
   agent-browser-mcp:
     image: coofly/agent-browser-mcp:latest
     ports:
-      - "9223:9223"
+      - "9223:9223"           # MCP SSE 服务端口
     environment:
-      - MCP_TRANSPORT=sse
+      - MCP_TRANSPORT=sse     # 传输模式：sse 或 stdio
+      # - MCP_HOST=0.0.0.0    # SSE 服务绑定地址（默认：0.0.0.0）
+      # - MCP_PORT=9223       # SSE 服务端口（默认：9223）
+      # - CDP_ENDPOINT=http://chrome:9222  # 远程浏览器 CDP 端点
+      # - BROWSER_TIMEOUT=30000            # 命令超时时间（毫秒）
 ```
 
 ### 从源码构建
