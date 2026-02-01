@@ -28,9 +28,6 @@ RUN npm ci --omit=dev && npm cache clean --force
 # 从构建阶段复制编译产物
 COPY --from=builder /app/dist ./dist
 
-# 复制配置文件模板
-COPY config.example.yaml ./
-
 # 环境变量
 ENV NODE_ENV=production
 
