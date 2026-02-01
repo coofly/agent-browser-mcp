@@ -49,3 +49,12 @@ jobs:
           tags: |
             coofly/agent-browser-mcp:${{ steps.version.outputs.VERSION }}
             coofly/agent-browser-mcp:latest
+
+      # 同步 README 到 Docker Hub
+      - name: Update Docker Hub Description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: coofly/agent-browser-mcp
+          readme-filepath: ./README.md
