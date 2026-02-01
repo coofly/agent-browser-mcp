@@ -1,0 +1,44 @@
+# agent-browser-mcp 配置文件
+# 复制此文件为 config.yaml 并根据需要修改
+
+# ===================
+# CDP 远程调试配置
+# ===================
+cdp:
+  # 是否启用 CDP 远程连接
+  # 启用后将连接到远程 Chrome/Edge 浏览器实例
+  enabled: false
+
+  # CDP 远程端点地址
+  # 格式: http://<host>:<port>
+  # 示例: http://10.0.0.20:9222
+  #
+  # 如何启动支持 CDP 的浏览器:
+  #   Chrome: chrome --remote-debugging-port=9222
+  #   Edge:   msedge --remote-debugging-port=9222
+  endpoint: "http://10.0.0.20:9222"
+
+# ===================
+# MCP 服务器配置
+# ===================
+server:
+  # 传输模式
+  # - stdio: 标准输入输出模式（默认，用于 Claude Desktop 等）
+  # - sse:   HTTP/SSE 模式（用于 Web 客户端或远程访问）
+  transport: stdio
+
+  # SSE 模式下的监听端口
+  port: 9223
+
+  # SSE 模式下的监听地址
+  # - 0.0.0.0: 监听所有网络接口（允许远程访问）
+  # - 127.0.0.1: 仅本地访问
+  host: "0.0.0.0"
+
+# ===================
+# 浏览器操作配置
+# ===================
+browser:
+  # 命令执行超时时间（毫秒）
+  # 建议值: 30000-60000
+  timeout: 30000
