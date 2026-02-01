@@ -114,23 +114,42 @@ With CDP endpoint:
 
 ## Docker
 
-### Build Image
+### Using Docker Hub (Recommended)
 
 ```bash
-docker build -t agent-browser-mcp:latest .
-```
+# Basic SSE mode (with built-in browser)
+docker run -d -p 9223:9223 \
+  -e MCP_TRANSPORT=sse \
+  coofly/agent-browser-mcp:latest
 
-### Run Container
-
-```bash
-# SSE mode
-docker run -p 9223:9223 -e MCP_TRANSPORT=sse agent-browser-mcp:latest
-
-# With CDP endpoint
-docker run -p 9223:9223 \
+# Connect to remote CDP browser (faster startup, no browser installation)
+docker run -d -p 9223:9223 \
   -e MCP_TRANSPORT=sse \
   -e CDP_ENDPOINT=http://host.docker.internal:9222 \
-  agent-browser-mcp:latest
+  coofly/agent-browser-mcp:latest
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  agent-browser-mcp:
+    image: coofly/agent-browser-mcp:latest
+    ports:
+      - "9223:9223"
+    environment:
+      - MCP_TRANSPORT=sse
+```
+
+### Build from Source
+
+```bash
+# Build image
+docker build -t agent-browser-mcp:latest .
+
+# Run container
+docker run -d -p 9223:9223 -e MCP_TRANSPORT=sse agent-browser-mcp:latest
 ```
 
 ## Available Tools

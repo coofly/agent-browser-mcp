@@ -114,23 +114,42 @@ CDP_ENDPOINT="http://localhost:9222" npm start
 
 ## Docker
 
-### 构建镜像
+### 使用 Docker Hub（推荐）
 
 ```bash
-docker build -t agent-browser-mcp:latest .
-```
+# 基本 SSE 模式（使用内置浏览器）
+docker run -d -p 9223:9223 \
+  -e MCP_TRANSPORT=sse \
+  coofly/agent-browser-mcp:latest
 
-### 运行容器
-
-```bash
-# SSE 模式
-docker run -p 9223:9223 -e MCP_TRANSPORT=sse agent-browser-mcp:latest
-
-# 指定 CDP 端点
-docker run -p 9223:9223 \
+# 连接远程 CDP 浏览器（启动更快，无需安装浏览器）
+docker run -d -p 9223:9223 \
   -e MCP_TRANSPORT=sse \
   -e CDP_ENDPOINT=http://host.docker.internal:9222 \
-  agent-browser-mcp:latest
+  coofly/agent-browser-mcp:latest
+```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  agent-browser-mcp:
+    image: coofly/agent-browser-mcp:latest
+    ports:
+      - "9223:9223"
+    environment:
+      - MCP_TRANSPORT=sse
+```
+
+### 从源码构建
+
+```bash
+# 构建镜像
+docker build -t agent-browser-mcp:latest .
+
+# 运行容器
+docker run -d -p 9223:9223 -e MCP_TRANSPORT=sse agent-browser-mcp:latest
 ```
 
 ## 可用工具

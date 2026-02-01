@@ -1,5 +1,5 @@
 # 构建阶段
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ COPY src/ ./src/
 RUN npm run build
 
 # 运行阶段
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
@@ -25,8 +25,15 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
+# 安装 agent-browser CLI（浏览器在启动时按需安装）
+RUN npm install -g agent-browser
+
 # 从构建阶段复制编译产物
 COPY --from=builder /app/dist ./dist
+
+# 复制启动脚本
+COPY entrypoint.sh ./
+RUN chmod +x entrypoint.sh
 
 # 环境变量
 ENV NODE_ENV=production
@@ -35,4 +42,4 @@ ENV NODE_ENV=production
 EXPOSE 9223
 
 # 启动命令
-CMD ["node", "dist/index.js"]
+ENTRYPOINT ["./entrypoint.sh"]
