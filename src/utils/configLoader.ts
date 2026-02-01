@@ -20,10 +20,6 @@ function loadEnvConfig(): AppConfig {
   }
 
   // 服务器配置
-  if (process.env.MCP_TRANSPORT === 'sse' || process.env.MCP_TRANSPORT === 'stdio') {
-    config.server.transport = process.env.MCP_TRANSPORT;
-  }
-
   if (process.env.MCP_PORT) {
     config.server.port = parseInt(process.env.MCP_PORT, 10);
   }

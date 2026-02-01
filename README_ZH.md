@@ -7,7 +7,8 @@
 ## 功能特性
 
 - **CDP 远程连接**：通过 Chrome DevTools Protocol 连接远程 Chrome/Edge 浏览器
-- **多传输模式**：支持 stdio 和 SSE (Server-Sent Events) 两种传输方式
+- **自动传输检测**：根据终端类型自动检测 stdio（管道）或 HTTP 模式
+- **Streamable HTTP**：使用现代 MCP Streamable HTTP 传输，提供更好的会话管理
 - **环境变量配置**：通过环境变量进行简单配置
 - **Docker 支持**：提供 Dockerfile，支持容器化部署
 
@@ -18,41 +19,26 @@
 **Linux / macOS / Git Bash：**
 
 ```bash
-# 直接运行（stdio 模式，默认）
+# 直接运行（自动检测模式）
 npx @coofly/agent-browser-mcp
-
-# SSE 模式
-MCP_TRANSPORT=sse MCP_PORT=9223 npx @coofly/agent-browser-mcp
 
 # 连接远程 CDP 浏览器
 CDP_ENDPOINT="http://localhost:9222" npx @coofly/agent-browser-mcp
-
-# SSE 模式 + 远程 CDP 浏览器
-MCP_TRANSPORT=sse CDP_ENDPOINT="http://localhost:9222" npx @coofly/agent-browser-mcp
 ```
 
 **Windows (PowerShell)：**
 
 ```powershell
-# 直接运行（stdio 模式，默认）
+# 直接运行（自动检测模式）
 npx @coofly/agent-browser-mcp
-
-# SSE 模式
-$env:MCP_TRANSPORT="sse"; $env:MCP_PORT="9223"; npx @coofly/agent-browser-mcp
 
 # 连接远程 CDP 浏览器
 $env:CDP_ENDPOINT="http://localhost:9222"; npx @coofly/agent-browser-mcp
-
-# SSE 模式 + 远程 CDP 浏览器
-$env:MCP_TRANSPORT="sse"; $env:CDP_ENDPOINT="http://localhost:9222"; npx @coofly/agent-browser-mcp
 ```
 
 **Windows (CMD)：**
 
 ```cmd
-# SSE 模式
-set MCP_TRANSPORT=sse && set MCP_PORT=9223 && npx @coofly/agent-browser-mcp
-
 # 连接远程 CDP 浏览器
 set CDP_ENDPOINT=http://localhost:9222 && npx @coofly/agent-browser-mcp
 ```
@@ -77,25 +63,33 @@ npm run build
 
 | 变量 | 描述 | 默认值 |
 |------|------|--------|
-| `MCP_TRANSPORT` | 传输模式 (`stdio` 或 `sse`) | `stdio` |
-| `MCP_PORT` | SSE 服务器端口 | `9223` |
-| `MCP_HOST` | SSE 服务器地址 | `0.0.0.0` |
+| `MCP_PORT` | HTTP 服务器端口 | `9223` |
+| `MCP_HOST` | HTTP 服务器地址 | `0.0.0.0` |
 | `CDP_ENDPOINT` | CDP 远程端点 URL | - |
 | `BROWSER_TIMEOUT` | 命令超时时间（毫秒） | `30000` |
 
+**传输模式自动检测：**
+- **交互式终端（TTY）**：启动 HTTP 服务器，监听 `/mcp` 端点
+- **管道输入（非 TTY）**：启动 Stdio 模式，用于 Claude Desktop 等集成
+
 ## 使用方法
 
-### Stdio 模式（默认）
+### 自动模式（推荐）
 
 ```bash
+# 在终端中：启动 HTTP 服务器，端口 9223
 npm start
+
+# 通过管道：启动 Stdio 模式
+echo '{}' | npm start
 ```
 
-### SSE 模式
+### HTTP 模式端点
 
-```bash
-MCP_TRANSPORT=sse MCP_PORT=9223 npm start
-```
+在 HTTP 模式下（交互式终端）：
+
+- **MCP 端点**: `http://localhost:9223/mcp`
+- **健康检查**: `http://localhost:9223/health`
 
 ### 连接 CDP 远程浏览器
 
@@ -148,31 +142,21 @@ CDP_ENDPOINT="http://localhost:9222" npm start
 ### 使用 Docker Hub（推荐）
 
 ```bash
-# SSE 模式，使用内置浏览器（首次启动时安装浏览器）
+# HTTP 模式，使用内置浏览器（首次启动时安装浏览器）
 docker run -d -p 9223:9223 \
-  -e MCP_TRANSPORT=sse \
   coofly/agent-browser-mcp:latest
 
-# SSE 模式，连接远程 CDP 浏览器（启动更快，无需安装浏览器）
+# HTTP 模式，连接远程 CDP 浏览器（启动更快）
 docker run -d -p 9223:9223 \
-  -e MCP_TRANSPORT=sse \
   -e CDP_ENDPOINT=http://host.docker.internal:9222 \
   coofly/agent-browser-mcp:latest
 
 # Stdio 模式（用于直接集成 MCP 客户端）
 docker run -i --rm \
-  -e MCP_TRANSPORT=stdio \
-  coofly/agent-browser-mcp:latest
-
-# Stdio 模式，连接远程 CDP 浏览器
-docker run -i --rm \
-  -e MCP_TRANSPORT=stdio \
-  -e CDP_ENDPOINT=http://host.docker.internal:9222 \
   coofly/agent-browser-mcp:latest
 
 # 自定义超时时间（默认：30000ms）
 docker run -d -p 9223:9223 \
-  -e MCP_TRANSPORT=sse \
   -e BROWSER_TIMEOUT=60000 \
   coofly/agent-browser-mcp:latest
 ```
@@ -185,11 +169,10 @@ services:
   agent-browser-mcp:
     image: coofly/agent-browser-mcp:latest
     ports:
-      - "9223:9223"           # MCP SSE 服务端口
+      - "9223:9223"           # MCP HTTP 服务端口
     environment:
-      - MCP_TRANSPORT=sse     # 传输模式：sse 或 stdio
-      # - MCP_HOST=0.0.0.0    # SSE 服务绑定地址（默认：0.0.0.0）
-      # - MCP_PORT=9223       # SSE 服务端口（默认：9223）
+      # - MCP_HOST=0.0.0.0    # HTTP 服务绑定地址（默认：0.0.0.0）
+      # - MCP_PORT=9223       # HTTP 服务端口（默认：9223）
       # - CDP_ENDPOINT=http://chrome:9222  # 远程浏览器 CDP 端点
       # - BROWSER_TIMEOUT=30000            # 命令超时时间（毫秒）
 ```
@@ -200,8 +183,8 @@ services:
 # 构建镜像
 docker build -t agent-browser-mcp:latest .
 
-# 运行容器
-docker run -d -p 9223:9223 -e MCP_TRANSPORT=sse agent-browser-mcp:latest
+# 运行容器（HTTP 模式）
+docker run -d -p 9223:9223 agent-browser-mcp:latest
 ```
 
 ## 可用工具

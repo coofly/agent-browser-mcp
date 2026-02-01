@@ -16,11 +16,9 @@ export interface CdpConfig {
  * 服务器配置
  */
 export interface ServerConfig {
-  /** 传输模式: stdio 或 sse */
-  transport: 'stdio' | 'sse';
-  /** SSE 模式下的端口号 */
+  /** HTTP 模式下的端口号 */
   port: number;
-  /** SSE 模式下的监听地址 */
+  /** HTTP 模式下的监听地址 */
   host: string;
 }
 
@@ -50,7 +48,6 @@ export const defaultConfig: AppConfig = {
     endpoint: '',
   },
   server: {
-    transport: 'stdio',
     port: 9223,
     host: '0.0.0.0',
   },

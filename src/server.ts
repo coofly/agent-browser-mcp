@@ -1,12 +1,13 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-import { createServer as createHttpServer } from 'http';
+import { createServer as createHttpServer, IncomingMessage, ServerResponse } from 'http';
+import { randomUUID } from 'crypto';
 import { getConfig } from './utils/configLoader.js';
 import type { AppConfig } from './config.js';
 
@@ -297,11 +298,18 @@ export async function startServer() {
     console.error(`[CDP] 已启用远程连接: ${appConfig.cdp.endpoint}`);
   }
 
-  const server = await createServer();
+  // 检测是否为 TTY（交互式终端）
+  const isTTY = process.stdin.isTTY;
 
-  if (appConfig.server.transport === 'sse') {
-    await startSseServer(server, appConfig);
+  if (isTTY) {
+    // 交互式终端：只启动 HTTP 服务器
+    console.error('[服务器] 检测到交互式终端，启动 HTTP 模式');
+    const server = await createServer();
+    await startHttpServer(server, appConfig);
   } else {
+    // 非交互式（管道输入）：启动 Stdio 模式
+    console.error('[服务器] 检测到管道输入，启动 Stdio 模式');
+    const server = await createServer();
     await startStdioServer(server);
   }
 }
@@ -316,21 +324,20 @@ async function startStdioServer(server: Server) {
 }
 
 /**
- * 启动 SSE 模式服务器
+ * 启动 HTTP 模式服务器（使用 StreamableHTTP）
  */
-async function startSseServer(server: Server, config: AppConfig) {
+async function startHttpServer(server: Server, config: AppConfig) {
   const { port, host } = config.server;
-
-  // 存储活跃的 SSE 传输连接
-  const transports = new Map<string, SSEServerTransport>();
+  const transports = new Map<string, StreamableHTTPServerTransport>();
 
   const httpServer = createHttpServer(async (req, res) => {
     const url = new URL(req.url || '/', `http://${req.headers.host}`);
 
-    // 设置 CORS 头
+    // CORS 头
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, mcp-session-id');
+    res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
 
     if (req.method === 'OPTIONS') {
       res.writeHead(200);
@@ -338,64 +345,76 @@ async function startSseServer(server: Server, config: AppConfig) {
       return;
     }
 
-    // SSE 端点
-    if (url.pathname === '/sse' && req.method === 'GET') {
-      const transport = new SSEServerTransport('/messages', res);
-      // 使用 transport 内部的 sessionId，确保与客户端收到的一致
-      const sessionId = transport.sessionId;
-      transports.set(sessionId, transport);
-
-      console.error(`[SSE] 新连接: ${sessionId}`);
-
-      res.on('close', () => {
-        transports.delete(sessionId);
-        console.error(`[SSE] 连接关闭: ${sessionId}`);
-      });
-
-      await server.connect(transport);
-      return;
-    }
-
-    // 消息端点
-    if (url.pathname === '/messages' && req.method === 'POST') {
-      const sessionId = url.searchParams.get('sessionId');
-      if (!sessionId) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: '缺少 sessionId 参数' }));
-        return;
-      }
-
-      const transport = transports.get(sessionId);
-      if (!transport) {
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: '会话不存在' }));
-        return;
-      }
-
-      await transport.handlePostMessage(req, res);
-      return;
-    }
-
-    // 健康检查端点
+    // 健康检查
     if (url.pathname === '/health') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         status: 'ok',
-        transport: 'sse',
+        transport: 'streamable-http',
         connections: transports.size
       }));
       return;
     }
 
-    // 404
+    // MCP 端点处理
+    if (url.pathname === '/mcp') {
+      await handleMcpRequest(req, res, server, transports);
+      return;
+    }
+
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Not Found' }));
   });
 
   httpServer.listen(port, host, () => {
-    console.error(`[服务器] SSE 模式已启动`);
+    console.error(`[服务器] HTTP 模式已启动`);
     console.error(`[服务器] 监听地址: http://${host}:${port}`);
-    console.error(`[服务器] SSE 端点: http://${host}:${port}/sse`);
+    console.error(`[服务器] MCP 端点: http://${host}:${port}/mcp`);
     console.error(`[服务器] 健康检查: http://${host}:${port}/health`);
   });
+}
+
+/**
+ * 处理 MCP 请求
+ */
+async function handleMcpRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+  server: Server,
+  transports: Map<string, StreamableHTTPServerTransport>
+) {
+  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+  let transport: StreamableHTTPServerTransport;
+
+  if (sessionId && transports.has(sessionId)) {
+    // 已有会话
+    transport = transports.get(sessionId)!;
+  } else if (!sessionId && req.method === 'POST') {
+    // 新会话
+    transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+      onsessioninitialized: (id) => {
+        transports.set(id, transport);
+        console.error(`[MCP] 新会话: ${id}`);
+      },
+    });
+    transport.onclose = () => {
+      const id = transport.sessionId;
+      if (id) {
+        transports.delete(id);
+        console.error(`[MCP] 会话关闭: ${id}`);
+      }
+    };
+    await server.connect(transport);
+  } else if (sessionId && !transports.has(sessionId)) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: '会话不存在' }));
+    return;
+  } else {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: '缺少 mcp-session-id' }));
+    return;
+  }
+
+  await transport.handleRequest(req, res);
 }

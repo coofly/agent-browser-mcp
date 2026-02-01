@@ -7,7 +7,8 @@ MCP (Model Context Protocol) server for [agent-browser](https://github.com/verce
 ## Features
 
 - **CDP Remote Connection**: Connect to remote Chrome/Edge browser via Chrome DevTools Protocol
-- **Multiple Transport Modes**: Support both stdio and SSE (Server-Sent Events) transport
+- **Auto Transport Detection**: Automatically detects stdio (pipe) or HTTP mode based on terminal type
+- **Streamable HTTP**: Uses modern MCP Streamable HTTP transport for better session management
 - **Environment Variables**: Simple configuration via environment variables
 - **Docker Support**: Ready-to-use Dockerfile for containerized deployment
 
@@ -18,41 +19,26 @@ MCP (Model Context Protocol) server for [agent-browser](https://github.com/verce
 **Linux / macOS / Git Bash:**
 
 ```bash
-# Run directly (stdio mode, default)
+# Run directly (auto-detects mode)
 npx @coofly/agent-browser-mcp
-
-# SSE mode
-MCP_TRANSPORT=sse MCP_PORT=9223 npx @coofly/agent-browser-mcp
 
 # With remote CDP browser
 CDP_ENDPOINT="http://localhost:9222" npx @coofly/agent-browser-mcp
-
-# SSE mode with remote CDP browser
-MCP_TRANSPORT=sse CDP_ENDPOINT="http://localhost:9222" npx @coofly/agent-browser-mcp
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-# Run directly (stdio mode, default)
+# Run directly (auto-detects mode)
 npx @coofly/agent-browser-mcp
-
-# SSE mode
-$env:MCP_TRANSPORT="sse"; $env:MCP_PORT="9223"; npx @coofly/agent-browser-mcp
 
 # With remote CDP browser
 $env:CDP_ENDPOINT="http://localhost:9222"; npx @coofly/agent-browser-mcp
-
-# SSE mode with remote CDP browser
-$env:MCP_TRANSPORT="sse"; $env:CDP_ENDPOINT="http://localhost:9222"; npx @coofly/agent-browser-mcp
 ```
 
 **Windows (CMD):**
 
 ```cmd
-# SSE mode
-set MCP_TRANSPORT=sse && set MCP_PORT=9223 && npx @coofly/agent-browser-mcp
-
 # With remote CDP browser
 set CDP_ENDPOINT=http://localhost:9222 && npx @coofly/agent-browser-mcp
 ```
@@ -77,25 +63,33 @@ All configuration is done via environment variables:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `MCP_TRANSPORT` | Transport mode (`stdio` or `sse`) | `stdio` |
-| `MCP_PORT` | SSE server port | `9223` |
-| `MCP_HOST` | SSE server host | `0.0.0.0` |
+| `MCP_PORT` | HTTP server port | `9223` |
+| `MCP_HOST` | HTTP server host | `0.0.0.0` |
 | `CDP_ENDPOINT` | CDP remote endpoint URL | - |
 | `BROWSER_TIMEOUT` | Command timeout (ms) | `30000` |
 
+**Transport Mode Auto-Detection:**
+- **Interactive terminal (TTY)**: Starts HTTP server, listening on `/mcp` endpoint
+- **Pipe input (non-TTY)**: Starts Stdio mode for Claude Desktop and other integrations
+
 ## Usage
 
-### Stdio Mode (Default)
+### Auto Mode (Recommended)
 
 ```bash
+# In terminal: starts HTTP server on port 9223
 npm start
+
+# Via pipe: starts Stdio mode
+echo '{}' | npm start
 ```
 
-### SSE Mode
+### HTTP Mode Endpoints
 
-```bash
-MCP_TRANSPORT=sse MCP_PORT=9223 npm start
-```
+When running in HTTP mode (interactive terminal):
+
+- **MCP Endpoint**: `http://localhost:9223/mcp`
+- **Health Check**: `http://localhost:9223/health`
 
 ### With CDP Remote Browser
 
@@ -148,31 +142,21 @@ With CDP endpoint:
 ### Using Docker Hub (Recommended)
 
 ```bash
-# SSE mode with built-in browser (browser installed on first start)
+# HTTP mode with built-in browser (browser installed on first start)
 docker run -d -p 9223:9223 \
-  -e MCP_TRANSPORT=sse \
   coofly/agent-browser-mcp:latest
 
-# SSE mode with remote CDP browser (faster startup, no browser installation)
+# HTTP mode with remote CDP browser (faster startup)
 docker run -d -p 9223:9223 \
-  -e MCP_TRANSPORT=sse \
   -e CDP_ENDPOINT=http://host.docker.internal:9222 \
   coofly/agent-browser-mcp:latest
 
 # Stdio mode (for direct integration with MCP clients)
 docker run -i --rm \
-  -e MCP_TRANSPORT=stdio \
-  coofly/agent-browser-mcp:latest
-
-# Stdio mode with remote CDP browser
-docker run -i --rm \
-  -e MCP_TRANSPORT=stdio \
-  -e CDP_ENDPOINT=http://host.docker.internal:9222 \
   coofly/agent-browser-mcp:latest
 
 # Custom timeout setting (default: 30000ms)
 docker run -d -p 9223:9223 \
-  -e MCP_TRANSPORT=sse \
   -e BROWSER_TIMEOUT=60000 \
   coofly/agent-browser-mcp:latest
 ```
@@ -185,11 +169,10 @@ services:
   agent-browser-mcp:
     image: coofly/agent-browser-mcp:latest
     ports:
-      - "9223:9223"           # MCP SSE server port
+      - "9223:9223"           # MCP HTTP server port
     environment:
-      - MCP_TRANSPORT=sse     # Transport mode: sse or stdio
-      # - MCP_HOST=0.0.0.0    # SSE server bind address (default: 0.0.0.0)
-      # - MCP_PORT=9223       # SSE server port (default: 9223)
+      # - MCP_HOST=0.0.0.0    # HTTP server bind address (default: 0.0.0.0)
+      # - MCP_PORT=9223       # HTTP server port (default: 9223)
       # - CDP_ENDPOINT=http://chrome:9222  # Remote browser CDP endpoint
       # - BROWSER_TIMEOUT=30000            # Command timeout in ms
 ```
@@ -200,8 +183,8 @@ services:
 # Build image
 docker build -t agent-browser-mcp:latest .
 
-# Run container
-docker run -d -p 9223:9223 -e MCP_TRANSPORT=sse agent-browser-mcp:latest
+# Run container (HTTP mode)
+docker run -d -p 9223:9223 agent-browser-mcp:latest
 ```
 
 ## Available Tools
