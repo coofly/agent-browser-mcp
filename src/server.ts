@@ -309,10 +309,10 @@ export async function startServer() {
     console.error('[服务器] 配置指定 Stdio 模式');
     useHttpMode = false;
   } else {
-    // auto 模式：检测是否为 TTY（交互式终端）
-    const isTTY = process.stdin.isTTY;
-    useHttpMode = !!isTTY;
-    console.error(`[服务器] 自动检测模式: ${isTTY ? 'HTTP' : 'Stdio'}`);
+    // auto 模式：默认使用 HTTP，仅当明确检测到管道输入时使用 Stdio
+    // Docker 等容器环境没有 TTY，但应该使用 HTTP 模式
+    useHttpMode = true;
+    console.error('[服务器] 自动检测模式: HTTP（默认）');
   }
 
   if (useHttpMode) {
