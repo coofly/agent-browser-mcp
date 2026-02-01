@@ -8,7 +8,7 @@ MCP (Model Context Protocol) server for [agent-browser](https://github.com/verce
 
 - **CDP Remote Connection**: Connect to remote Chrome/Edge browser via Chrome DevTools Protocol
 - **Multiple Transport Modes**: Support both stdio and SSE (Server-Sent Events) transport
-- **YAML Configuration**: Easy-to-read configuration with comments support
+- **Environment Variables**: Simple configuration via environment variables
 - **Docker Support**: Ready-to-use Dockerfile for containerized deployment
 
 ## Installation
@@ -20,10 +20,10 @@ MCP (Model Context Protocol) server for [agent-browser](https://github.com/verce
 npx @coofly/agent-browser-mcp
 
 # SSE mode
-npx @coofly/agent-browser-mcp --sse --port 9223
+MCP_TRANSPORT=sse MCP_PORT=9223 npx @coofly/agent-browser-mcp
 
 # With CDP endpoint
-npx @coofly/agent-browser-mcp --cdp "http://localhost:9222"
+CDP_ENDPOINT="http://localhost:9222" npx @coofly/agent-browser-mcp
 ```
 
 ### From Source
@@ -42,30 +42,15 @@ npm run build
 
 ## Configuration
 
-Copy the example configuration file:
+All configuration is done via environment variables:
 
-```bash
-cp config.example.yaml config.yaml
-```
-
-### Configuration Options
-
-```yaml
-# CDP remote debugging configuration
-cdp:
-  enabled: false
-  endpoint: "http://10.0.0.20:9222"
-
-# MCP server configuration
-server:
-  transport: stdio  # stdio or sse
-  port: 9223
-  host: "0.0.0.0"
-
-# Browser operation configuration
-browser:
-  timeout: 30000
-```
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `MCP_TRANSPORT` | Transport mode (`stdio` or `sse`) | `stdio` |
+| `MCP_PORT` | SSE server port | `9223` |
+| `MCP_HOST` | SSE server host | `0.0.0.0` |
+| `CDP_ENDPOINT` | CDP remote endpoint URL | - |
+| `BROWSER_TIMEOUT` | Command timeout (ms) | `30000` |
 
 ## Usage
 
@@ -78,10 +63,6 @@ npm start
 ### SSE Mode
 
 ```bash
-# Via command line
-npm start -- --sse --port 9223
-
-# Via environment variables
 MCP_TRANSPORT=sse MCP_PORT=9223 npm start
 ```
 
@@ -92,7 +73,7 @@ MCP_TRANSPORT=sse MCP_PORT=9223 npm start
 chrome --remote-debugging-port=9222
 
 # Start MCP server with CDP
-npm start -- --cdp "http://localhost:9222"
+CDP_ENDPOINT="http://localhost:9222" npm start
 ```
 
 ### MCP Client Configuration
@@ -122,7 +103,10 @@ With CDP endpoint:
   "mcpServers": {
     "agent-browser": {
       "command": "npx",
-      "args": ["agent-browser-mcp", "--cdp", "http://localhost:9222"]
+      "args": ["@coofly/agent-browser-mcp"],
+      "env": {
+        "CDP_ENDPOINT": "http://localhost:9222"
+      }
     }
   }
 }
@@ -147,11 +131,6 @@ docker run -p 9223:9223 \
   -e MCP_TRANSPORT=sse \
   -e CDP_ENDPOINT=http://host.docker.internal:9222 \
   agent-browser-mcp:latest
-
-# With custom config
-docker run -p 9223:9223 \
-  -v ./config.yaml:/app/config.yaml \
-  agent-browser-mcp:latest
 ```
 
 ## Available Tools
@@ -175,16 +154,6 @@ docker run -p 9223:9223 \
 | `browser_get_html` | Get element HTML |
 | `browser_screenshot` | Take screenshot |
 | `browser_scroll` | Scroll page |
-
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `CDP_ENDPOINT` | CDP remote endpoint URL | - |
-| `MCP_TRANSPORT` | Transport mode (stdio/sse) | stdio |
-| `MCP_PORT` | SSE server port | 9223 |
-| `MCP_HOST` | SSE server host | 0.0.0.0 |
-| `BROWSER_TIMEOUT` | Command timeout (ms) | 30000 |
 
 ## License
 

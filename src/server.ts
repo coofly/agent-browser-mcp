@@ -13,7 +13,6 @@ import type { AppConfig } from './config.js';
 import * as navigation from './tools/navigation.js';
 import * as interaction from './tools/interaction.js';
 import * as information from './tools/information.js';
-import * as storage from './tools/storage.js';
 import * as advanced from './tools/advanced.js';
 
 interface SessionOptions {
@@ -261,12 +260,25 @@ export async function createServer() {
   // 调用工具
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
+
+    // 打印请求日志
+    console.error(`[Tool] ${name} 请求: ${JSON.stringify(args || {})}`);
+
     try {
       const result = await handleToolCall(name, args || {});
+
+      // 打印成功结果日志
+      console.error(`[Tool] ${name} 结果: ${result}`);
+
       return { content: [{ type: 'text', text: result }] };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: msg }) }] };
+      const errorResult = JSON.stringify({ success: false, error: msg });
+
+      // 打印错误结果日志
+      console.error(`[Tool] ${name} 错误: ${errorResult}`);
+
+      return { content: [{ type: 'text', text: errorResult }] };
     }
   });
 
