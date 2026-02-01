@@ -72,3 +72,8 @@ export async function check(selector: string, options?: ExecuteOptions) {
 export async function uncheck(selector: string, options?: ExecuteOptions) {
   return executeCommand(['uncheck', selector], options);
 }
+
+/** 聚焦元素 */
+export async function focus(selector: string, options?: ExecuteOptions) {
+  return executeCommand(['focus', selector], options);
+}

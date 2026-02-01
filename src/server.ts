@@ -130,6 +130,61 @@ const tools: Tool[] = [
       required: ['selector', 'value'],
     },
   },
+  {
+    name: 'browser_check',
+    description: '勾选复选框（操作复选框时优先使用此工具，比 click 更可靠，尤其适用于 Element Plus 等自定义 UI 组件）',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        selector: { type: 'string', description: '元素选择器' },
+      },
+      required: ['selector'],
+    },
+  },
+  {
+    name: 'browser_uncheck',
+    description: '取消勾选复选框（操作复选框时优先使用此工具，比 click 更可靠，尤其适用于 Element Plus 等自定义 UI 组件）',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        selector: { type: 'string', description: '元素选择器' },
+      },
+      required: ['selector'],
+    },
+  },
+  {
+    name: 'browser_dblclick',
+    description: '双击元素',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        selector: { type: 'string', description: '元素选择器' },
+      },
+      required: ['selector'],
+    },
+  },
+  {
+    name: 'browser_clear',
+    description: '清空输入框',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        selector: { type: 'string', description: '元素选择器' },
+      },
+      required: ['selector'],
+    },
+  },
+  {
+    name: 'browser_focus',
+    description: '聚焦元素',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        selector: { type: 'string', description: '元素选择器' },
+      },
+      required: ['selector'],
+    },
+  },
   // 信息获取工具
   {
     name: 'browser_snapshot',
@@ -177,6 +232,34 @@ const tools: Tool[] = [
       required: ['direction'],
     },
   },
+  {
+    name: 'browser_wait',
+    description: '等待元素出现或等待指定时间（毫秒）',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        target: { type: 'string', description: '元素选择器或等待时间（毫秒）' },
+        state: { type: 'string', enum: ['visible', 'hidden', 'attached'], description: '等待元素时的状态' },
+      },
+      required: ['target'],
+    },
+  },
+  {
+    name: 'browser_evaluate',
+    description: '执行 JavaScript 代码',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        script: { type: 'string', description: '要执行的 JavaScript 代码' },
+      },
+      required: ['script'],
+    },
+  },
+  {
+    name: 'browser_close',
+    description: '关闭浏览器',
+    inputSchema: { type: 'object', properties: {} },
+  },
 ];
 
 /**
@@ -220,6 +303,16 @@ async function handleToolCall(
       return JSON.stringify(await interaction.press(args.key as string, opts));
     case 'browser_select':
       return JSON.stringify(await interaction.select(args.selector as string, args.value as string, opts));
+    case 'browser_check':
+      return JSON.stringify(await interaction.check(args.selector as string, opts));
+    case 'browser_uncheck':
+      return JSON.stringify(await interaction.uncheck(args.selector as string, opts));
+    case 'browser_dblclick':
+      return JSON.stringify(await interaction.dblclick(args.selector as string, opts));
+    case 'browser_clear':
+      return JSON.stringify(await interaction.clear(args.selector as string, opts));
+    case 'browser_focus':
+      return JSON.stringify(await interaction.focus(args.selector as string, opts));
 
     // 信息获取
     case 'browser_snapshot':
@@ -238,6 +331,15 @@ async function handleToolCall(
         args.amount as number,
         opts
       ));
+    case 'browser_wait':
+      return JSON.stringify(await advanced.wait(
+        args.target as string,
+        { ...opts, state: args.state as 'visible' | 'hidden' | 'attached' | undefined }
+      ));
+    case 'browser_evaluate':
+      return JSON.stringify(await advanced.evaluate(args.script as string, opts));
+    case 'browser_close':
+      return JSON.stringify(await advanced.close(opts));
 
     default:
       return JSON.stringify({ success: false, error: `未知工具: ${name}` });

@@ -53,3 +53,25 @@ export async function waitFor(
 export async function evaluate(script: string, options?: ExecuteOptions) {
   return executeCommand(['eval', script], options);
 }
+
+/** 等待（元素或时间） */
+export async function wait(
+  target: string,
+  options?: ExecuteOptions & { state?: 'visible' | 'hidden' | 'attached' }
+) {
+  // 如果是纯数字，等待指定毫秒
+  if (/^\d+$/.test(target)) {
+    return executeCommand(['wait', target], options);
+  }
+  // 否则等待元素
+  const args = ['wait', 'for', target];
+  if (options?.state) {
+    args.push('--state', options.state);
+  }
+  return executeCommand(args, options);
+}
+
+/** 关闭浏览器 */
+export async function close(options?: ExecuteOptions) {
+  return executeCommand(['close'], options);
+}

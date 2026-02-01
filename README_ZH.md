@@ -198,16 +198,24 @@ docker run -d -p 9223:9223 agent-browser-mcp:latest
 | `browser_get_url` | 获取当前 URL |
 | `browser_get_title` | 获取页面标题 |
 | `browser_click` | 点击元素 |
+| `browser_dblclick` | 双击元素 |
 | `browser_type` | 输入文本（逐字符） |
 | `browser_fill` | 填充输入框 |
+| `browser_clear` | 清空输入框 |
 | `browser_hover` | 悬停元素 |
 | `browser_press` | 按下键盘按键 |
 | `browser_select` | 选择下拉选项 |
+| `browser_check` | 勾选复选框（操作复选框时优先使用，比 click 更可靠） |
+| `browser_uncheck` | 取消勾选复选框（操作复选框时优先使用，比 click 更可靠） |
+| `browser_focus` | 聚焦元素 |
 | `browser_snapshot` | 获取页面可访问性快照 |
 | `browser_get_text` | 获取元素文本 |
 | `browser_get_html` | 获取元素 HTML |
 | `browser_screenshot` | 截图 |
 | `browser_scroll` | 滚动页面 |
+| `browser_wait` | 等待元素出现或等待指定时间（毫秒） |
+| `browser_evaluate` | 执行 JavaScript 代码 |
+| `browser_close` | 关闭浏览器 |
 
 ## 许可证
 

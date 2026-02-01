@@ -198,16 +198,24 @@ docker run -d -p 9223:9223 agent-browser-mcp:latest
 | `browser_get_url` | Get current URL |
 | `browser_get_title` | Get page title |
 | `browser_click` | Click an element |
+| `browser_dblclick` | Double-click an element |
 | `browser_type` | Type text (character by character) |
 | `browser_fill` | Fill input field |
+| `browser_clear` | Clear input field |
 | `browser_hover` | Hover over element |
 | `browser_press` | Press keyboard key |
 | `browser_select` | Select dropdown option |
+| `browser_check` | Check checkbox (preferred for checkboxes, more reliable than click) |
+| `browser_uncheck` | Uncheck checkbox (preferred for checkboxes, more reliable than click) |
+| `browser_focus` | Focus an element |
 | `browser_snapshot` | Get page accessibility snapshot |
 | `browser_get_text` | Get element text |
 | `browser_get_html` | Get element HTML |
 | `browser_screenshot` | Take screenshot |
 | `browser_scroll` | Scroll page |
+| `browser_wait` | Wait for element or time (ms) |
+| `browser_evaluate` | Execute JavaScript code |
+| `browser_close` | Close browser |
 
 ## License
 
