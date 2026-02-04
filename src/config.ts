@@ -13,11 +13,6 @@ export interface CdpConfig {
 }
 
 /**
- * 服务器传输模式
- */
-export type TransportMode = 'auto' | 'http' | 'stdio';
-
-/**
  * 服务器配置
  */
 export interface ServerConfig {
@@ -25,8 +20,6 @@ export interface ServerConfig {
   port: number;
   /** HTTP 模式下的监听地址 */
   host: string;
-  /** 传输模式：auto（自动检测）、http、stdio */
-  mode: TransportMode;
 }
 
 /**
@@ -57,7 +50,6 @@ export const defaultConfig: AppConfig = {
   server: {
     port: 9223,
     host: '0.0.0.0',
-    mode: 'auto',
   },
   browser: {
     timeout: 30000,

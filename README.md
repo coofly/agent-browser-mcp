@@ -7,7 +7,7 @@ MCP (Model Context Protocol) server for [agent-browser](https://github.com/verce
 ## Features
 
 - **CDP Remote Connection**: Connect to remote Chrome/Edge browser via Chrome DevTools Protocol
-- **Auto Transport Detection**: Automatically detects stdio (pipe) or HTTP mode based on terminal type
+- **Transport Selection**: HTTP when `MCP_HOST` + `MCP_PORT` are set; otherwise Stdio
 - **Streamable HTTP**: Uses modern MCP Streamable HTTP transport for better session management
 - **Environment Variables**: Simple configuration via environment variables
 - **Docker Support**: Ready-to-use Dockerfile for containerized deployment
@@ -19,7 +19,7 @@ MCP (Model Context Protocol) server for [agent-browser](https://github.com/verce
 **Linux / macOS / Git Bash:**
 
 ```bash
-# Run directly (auto-detects mode)
+# Run directly (Stdio mode)
 npx @coofly/agent-browser-mcp
 
 # With remote CDP browser
@@ -29,7 +29,7 @@ CDP_ENDPOINT="http://localhost:9222" npx @coofly/agent-browser-mcp
 **Windows (PowerShell):**
 
 ```powershell
-# Run directly (auto-detects mode)
+# Run directly (Stdio mode)
 npx @coofly/agent-browser-mcp
 
 # With remote CDP browser
@@ -63,30 +63,35 @@ All configuration is done via environment variables:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `MCP_PORT` | HTTP server port | `9223` |
-| `MCP_HOST` | HTTP server host | `0.0.0.0` |
+| `MCP_PORT` | HTTP server port (required with `MCP_HOST` to enable HTTP mode) | - |
+| `MCP_HOST` | HTTP server host (required with `MCP_PORT` to enable HTTP mode) | - |
 | `CDP_ENDPOINT` | CDP remote endpoint URL | - |
 | `BROWSER_TIMEOUT` | Command timeout (ms) | `30000` |
 
-**Transport Mode Auto-Detection:**
-- **Interactive terminal (TTY)**: Starts HTTP server, listening on `/mcp` endpoint
-- **Pipe input (non-TTY)**: Starts Stdio mode for Claude Desktop and other integrations
-
 ## Usage
 
-### Auto Mode (Recommended)
+### Stdio Mode (Default)
 
 ```bash
-# In terminal: starts HTTP server on port 9223
+# In terminal: Stdio mode (waits for MCP input)
 npm start
 
-# Via pipe: starts Stdio mode
+# Via pipe: use Stdio for direct integration
 echo '{}' | npm start
 ```
 
-### HTTP Mode Endpoints
+### HTTP Mode
 
-When running in HTTP mode (interactive terminal):
+```bash
+# Both MCP_HOST and MCP_PORT must be set and valid
+MCP_HOST=0.0.0.0 MCP_PORT=9223 npm start
+```
+
+If only one of `MCP_HOST`/`MCP_PORT` is set, or the port is invalid, the server exits with an error.
+
+### HTTP Endpoints
+
+When running in HTTP mode, HTTP is available at:
 
 - **MCP Endpoint**: `http://localhost:9223/mcp`
 - **Health Check**: `http://localhost:9223/health`
@@ -144,10 +149,14 @@ With CDP endpoint:
 ```bash
 # HTTP mode with built-in browser (browser installed on first start)
 docker run -d -p 9223:9223 \
+  -e MCP_HOST=0.0.0.0 \
+  -e MCP_PORT=9223 \
   coofly/agent-browser-mcp:latest
 
 # HTTP mode with remote CDP browser (faster startup)
 docker run -d -p 9223:9223 \
+  -e MCP_HOST=0.0.0.0 \
+  -e MCP_PORT=9223 \
   -e CDP_ENDPOINT=http://host.docker.internal:9222 \
   coofly/agent-browser-mcp:latest
 
@@ -171,8 +180,8 @@ services:
     ports:
       - "9223:9223"           # MCP HTTP server port
     environment:
-      # - MCP_HOST=0.0.0.0    # HTTP server bind address (default: 0.0.0.0)
-      # - MCP_PORT=9223       # HTTP server port (default: 9223)
+      # - MCP_HOST=0.0.0.0    # HTTP server bind address (required with MCP_PORT)
+      # - MCP_PORT=9223       # HTTP server port (required with MCP_HOST)
       # - CDP_ENDPOINT=http://chrome:9222  # Remote browser CDP endpoint
       # - BROWSER_TIMEOUT=30000            # Command timeout in ms
 ```
@@ -184,7 +193,10 @@ services:
 docker build -t agent-browser-mcp:latest .
 
 # Run container (HTTP mode)
-docker run -d -p 9223:9223 agent-browser-mcp:latest
+docker run -d -p 9223:9223 \
+  -e MCP_HOST=0.0.0.0 \
+  -e MCP_PORT=9223 \
+  agent-browser-mcp:latest
 ```
 
 ## Available Tools

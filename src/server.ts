@@ -22,10 +22,42 @@ interface SessionOptions {
   headed?: boolean;
   /** CDP 远程端点地址 */
   cdp?: string;
+  /** 命令执行超时时间（毫秒） */
+  timeout?: number;
 }
 
 let globalOptions: SessionOptions = {};
 let appConfig: AppConfig | null = null;
+
+interface HttpEnvConfig {
+  host: string;
+  port: number;
+}
+
+function resolveHttpEnvConfig(): HttpEnvConfig | null {
+  const rawHost = process.env.MCP_HOST;
+  const rawPort = process.env.MCP_PORT;
+  const host = rawHost?.trim() ?? '';
+  const portText = rawPort?.trim() ?? '';
+
+  const hostSet = rawHost !== undefined && host.length > 0;
+  const portSet = rawPort !== undefined && portText.length > 0;
+
+  if (!hostSet && !portSet) {
+    return null;
+  }
+
+  if (!hostSet || !portSet) {
+    throw new Error('MCP_HOST 和 MCP_PORT 必须同时设置（且均为非空值），否则请同时留空以使用 Stdio 模式。');
+  }
+
+  const port = Number(portText);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`MCP_PORT 无效（${rawPort}），必须是 1-65535 的整数。`);
+  }
+
+  return { host, port };
+}
 
 const tools: Tool[] = [
   // 导航工具
@@ -420,30 +452,22 @@ export async function startServer() {
     console.error(`[CDP] 已启用远程连接: ${appConfig.cdp.endpoint}`);
   }
 
-  // 确定传输模式
-  const configMode = appConfig.server.mode;
-  let useHttpMode: boolean;
+  // 设置全局超时
+  globalOptions.timeout = appConfig.browser.timeout;
 
-  if (configMode === 'http') {
-    console.error('[服务器] 配置指定 HTTP 模式');
-    useHttpMode = true;
-  } else if (configMode === 'stdio') {
-    console.error('[服务器] 配置指定 Stdio 模式');
-    useHttpMode = false;
-  } else {
-    // auto 模式：默认使用 HTTP，仅当明确检测到管道输入时使用 Stdio
-    // Docker 等容器环境没有 TTY，但应该使用 HTTP 模式
-    useHttpMode = true;
-    console.error('[服务器] 自动检测模式: HTTP（默认）');
+  const httpEnv = resolveHttpEnvConfig();
+  if (httpEnv) {
+    appConfig.server.host = httpEnv.host;
+    appConfig.server.port = httpEnv.port;
+
+    console.error('[服务器] 以 HTTP 模式启动');
+    const httpServer = await createServer();
+    await startHttpServer(httpServer, httpEnv);
+    return;
   }
 
-  if (useHttpMode) {
-    const server = await createServer();
-    await startHttpServer(server, appConfig);
-  } else {
-    const server = await createServer();
-    await startStdioServer(server);
-  }
+  const stdioServer = await createServer();
+  await startStdioServer(stdioServer);
 }
 
 /**
@@ -458,8 +482,8 @@ async function startStdioServer(server: Server) {
 /**
  * 启动 HTTP 模式服务器（使用 StreamableHTTP）
  */
-async function startHttpServer(server: Server, config: AppConfig) {
-  const { port, host } = config.server;
+async function startHttpServer(server: Server, config: HttpEnvConfig) {
+  const { port, host } = config;
   const transports = new Map<string, StreamableHTTPServerTransport>();
 
   const httpServer = createHttpServer(async (req, res) => {

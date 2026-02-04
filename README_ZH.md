@@ -7,7 +7,7 @@
 ## 功能特性
 
 - **CDP 远程连接**：通过 Chrome DevTools Protocol 连接远程 Chrome/Edge 浏览器
-- **自动传输检测**：根据终端类型自动检测 stdio（管道）或 HTTP 模式
+- **传输选择**：设置 `MCP_HOST` + `MCP_PORT` 启用 HTTP，否则使用 Stdio
 - **Streamable HTTP**：使用现代 MCP Streamable HTTP 传输，提供更好的会话管理
 - **环境变量配置**：通过环境变量进行简单配置
 - **Docker 支持**：提供 Dockerfile，支持容器化部署
@@ -19,7 +19,7 @@
 **Linux / macOS / Git Bash：**
 
 ```bash
-# 直接运行（自动检测模式）
+# 直接运行（Stdio 模式）
 npx @coofly/agent-browser-mcp
 
 # 连接远程 CDP 浏览器
@@ -29,7 +29,7 @@ CDP_ENDPOINT="http://localhost:9222" npx @coofly/agent-browser-mcp
 **Windows (PowerShell)：**
 
 ```powershell
-# 直接运行（自动检测模式）
+# 直接运行（Stdio 模式）
 npx @coofly/agent-browser-mcp
 
 # 连接远程 CDP 浏览器
@@ -63,30 +63,35 @@ npm run build
 
 | 变量 | 描述 | 默认值 |
 |------|------|--------|
-| `MCP_PORT` | HTTP 服务器端口 | `9223` |
-| `MCP_HOST` | HTTP 服务器地址 | `0.0.0.0` |
+| `MCP_PORT` | HTTP 服务器端口（与 `MCP_HOST` 同时设置才启用 HTTP） | - |
+| `MCP_HOST` | HTTP 服务器地址（与 `MCP_PORT` 同时设置才启用 HTTP） | - |
 | `CDP_ENDPOINT` | CDP 远程端点 URL | - |
 | `BROWSER_TIMEOUT` | 命令超时时间（毫秒） | `30000` |
 
-**传输模式自动检测：**
-- **交互式终端（TTY）**：启动 HTTP 服务器，监听 `/mcp` 端点
-- **管道输入（非 TTY）**：启动 Stdio 模式，用于 Claude Desktop 等集成
-
 ## 使用方法
 
-### 自动模式（推荐）
+### Stdio 模式（默认）
 
 ```bash
-# 在终端中：启动 HTTP 服务器，端口 9223
+# 在终端中：Stdio 模式（等待 MCP 输入）
 npm start
 
-# 通过管道：启动 Stdio 模式
+# 通过管道：使用 Stdio 直连
 echo '{}' | npm start
 ```
 
-### HTTP 模式端点
+### HTTP 模式
 
-在 HTTP 模式下（交互式终端）：
+```bash
+# MCP_HOST 与 MCP_PORT 必须同时设置且有效
+MCP_HOST=0.0.0.0 MCP_PORT=9223 npm start
+```
+
+若只设置其中一个变量或端口无效，服务会报错退出。
+
+### HTTP 端点
+
+在 HTTP 模式下，HTTP 端点可用：
 
 - **MCP 端点**: `http://localhost:9223/mcp`
 - **健康检查**: `http://localhost:9223/health`
@@ -144,10 +149,14 @@ CDP_ENDPOINT="http://localhost:9222" npm start
 ```bash
 # HTTP 模式，使用内置浏览器（首次启动时安装浏览器）
 docker run -d -p 9223:9223 \
+  -e MCP_HOST=0.0.0.0 \
+  -e MCP_PORT=9223 \
   coofly/agent-browser-mcp:latest
 
 # HTTP 模式，连接远程 CDP 浏览器（启动更快）
 docker run -d -p 9223:9223 \
+  -e MCP_HOST=0.0.0.0 \
+  -e MCP_PORT=9223 \
   -e CDP_ENDPOINT=http://host.docker.internal:9222 \
   coofly/agent-browser-mcp:latest
 
@@ -171,8 +180,8 @@ services:
     ports:
       - "9223:9223"           # MCP HTTP 服务端口
     environment:
-      # - MCP_HOST=0.0.0.0    # HTTP 服务绑定地址（默认：0.0.0.0）
-      # - MCP_PORT=9223       # HTTP 服务端口（默认：9223）
+      # - MCP_HOST=0.0.0.0    # HTTP 服务绑定地址（与 MCP_PORT 同时设置）
+      # - MCP_PORT=9223       # HTTP 服务端口（与 MCP_HOST 同时设置）
       # - CDP_ENDPOINT=http://chrome:9222  # 远程浏览器 CDP 端点
       # - BROWSER_TIMEOUT=30000            # 命令超时时间（毫秒）
 ```
@@ -184,7 +193,10 @@ services:
 docker build -t agent-browser-mcp:latest .
 
 # 运行容器（HTTP 模式）
-docker run -d -p 9223:9223 agent-browser-mcp:latest
+docker run -d -p 9223:9223 \
+  -e MCP_HOST=0.0.0.0 \
+  -e MCP_PORT=9223 \
+  agent-browser-mcp:latest
 ```
 
 ## 可用工具
